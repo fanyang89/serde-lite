@@ -16,6 +16,9 @@ default = []
 derive = ["serde-lite-derive"]
 preserve-order = ["indexmap"]
 
+[dependencies]
+num-traits = { version = "0.2.19", features = ["i128"] }
+
 [dependencies.indexmap]
 version = "2"
 optional = true

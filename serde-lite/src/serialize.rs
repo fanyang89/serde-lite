@@ -2,7 +2,6 @@ use std::{
     borrow::Cow,
     cell::RefCell,
     collections::HashMap,
-    convert::TryFrom,
     rc::Rc,
     sync::{Arc, Mutex},
 };
@@ -25,97 +24,87 @@ impl Serialize for bool {
     }
 }
 
-impl Serialize for i64 {
-    #[inline]
-    fn serialize(&self) -> Result<Intermediate, Error> {
-        Ok(Intermediate::Number(Number::SignedInt(*self)))
-    }
-}
-
-impl Serialize for u64 {
-    #[inline]
-    fn serialize(&self) -> Result<Intermediate, Error> {
-        Ok(Intermediate::Number(Number::UnsignedInt(*self)))
-    }
-}
-
 impl Serialize for f32 {
     #[inline]
     fn serialize(&self) -> Result<Intermediate, Error> {
-        Ok(Intermediate::Number(Number::Float(*self as _)))
+        Ok(Intermediate::Number(Number::F32(*self)))
     }
 }
 
 impl Serialize for f64 {
     #[inline]
     fn serialize(&self) -> Result<Intermediate, Error> {
-        Ok(Intermediate::Number(Number::Float(*self)))
+        Ok(Intermediate::Number(Number::F64(*self)))
     }
 }
 
-macro_rules! serialize_for_signed_int {
-    ( $x:ty ) => {
-        impl Serialize for $x {
-            #[inline]
-            fn serialize(&self) -> Result<Intermediate, Error> {
-                Ok(Intermediate::Number(Number::SignedInt(i64::from(*self))))
-            }
-        }
-    };
+impl Serialize for i8 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::I8(*self)))
+    }
 }
 
-macro_rules! serialize_for_unsigned_int {
-    ( $x:ty ) => {
-        impl Serialize for $x {
-            #[inline]
-            fn serialize(&self) -> Result<Intermediate, Error> {
-                Ok(Intermediate::Number(Number::UnsignedInt(u64::from(*self))))
-            }
-        }
-    };
+impl Serialize for i16 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::I16(*self)))
+    }
 }
 
-serialize_for_signed_int!(i8);
-serialize_for_signed_int!(i16);
-serialize_for_signed_int!(i32);
+impl Serialize for i32 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::I32(*self)))
+    }
+}
 
-serialize_for_unsigned_int!(u8);
-serialize_for_unsigned_int!(u16);
-serialize_for_unsigned_int!(u32);
+impl Serialize for i64 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::I64(*self)))
+    }
+}
+
+impl Serialize for u8 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::U8(*self)))
+    }
+}
+
+impl Serialize for u16 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::U16(*self)))
+    }
+}
+
+impl Serialize for u32 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::U32(*self)))
+    }
+}
+
+impl Serialize for u64 {
+    #[inline]
+    fn serialize(&self) -> Result<Intermediate, Error> {
+        Ok(Intermediate::Number(Number::U64(*self)))
+    }
+}
 
 impl Serialize for i128 {
     #[inline]
     fn serialize(&self) -> Result<Intermediate, Error> {
-        i64::try_from(*self)
-            .map(|v| Intermediate::Number(Number::SignedInt(v)))
-            .map_err(|_| Error::OutOfBounds)
+        Ok(Intermediate::Number(Number::I128(*self)))
     }
 }
 
 impl Serialize for u128 {
     #[inline]
     fn serialize(&self) -> Result<Intermediate, Error> {
-        u64::try_from(*self)
-            .map(|v| Intermediate::Number(Number::UnsignedInt(v)))
-            .map_err(|_| Error::OutOfBounds)
-    }
-}
-
-impl Serialize for isize {
-    #[inline]
-    fn serialize(&self) -> Result<Intermediate, Error> {
-        i64::try_from(*self)
-            .map(|v| Intermediate::Number(Number::SignedInt(v)))
-            .map_err(|_| Error::OutOfBounds)
-    }
-}
-
-impl Serialize for usize {
-    #[inline]
-    fn serialize(&self) -> Result<Intermediate, Error> {
-        u64::try_from(*self)
-            .map(|v| Intermediate::Number(Number::UnsignedInt(v)))
-            .map_err(|_| Error::OutOfBounds)
+        Ok(Intermediate::Number(Number::U128(*self)))
     }
 }
 

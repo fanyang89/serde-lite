@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     fmt::{self, Formatter},
 };
 
@@ -16,73 +16,69 @@ use crate::{Error, Map};
 /// Number.
 #[derive(Debug, Copy, Clone)]
 pub enum Number {
-    Float(f64),
-    SignedInt(i64),
-    UnsignedInt(u64),
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+    I128(i128),
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    U128(u128),
+    F32(f32),
+    F64(f64),
 }
 
-impl From<Number> for f64 {
-    #[inline]
-    fn from(n: Number) -> Self {
-        match n {
-            Number::Float(v) => v,
-            Number::SignedInt(v) => v as _,
-            Number::UnsignedInt(v) => v as _,
-        }
-    }
-}
-
-macro_rules! try_int_from_number {
-    ( $x:ty ) => {
+macro_rules! try_from_number {
+    ( $x:ty, $y:ident ) => {
         impl TryFrom<Number> for $x {
             type Error = Error;
 
             #[inline]
             fn try_from(n: Number) -> Result<Self, Self::Error> {
-                let res = match n {
-                    Number::Float(_) => return Err(Error::UnsupportedConversion),
-                    Number::SignedInt(v) => v.try_into(),
-                    Number::UnsignedInt(v) => v.try_into(),
-                };
-
-                res.map_err(|_| Error::OutOfBounds)
+                match n {
+                    Number::$y(v) => Ok(v),
+                    _ => Err(Error::UnsupportedConversion),
+                }
             }
         }
     };
 }
 
-try_int_from_number!(i8);
-try_int_from_number!(i16);
-try_int_from_number!(i32);
-try_int_from_number!(isize);
+try_from_number!(i8, I8);
+try_from_number!(i16, I16);
+try_from_number!(i32, I32);
+try_from_number!(i64, I64);
+try_from_number!(i128, I128);
 
-impl TryFrom<Number> for i64 {
+try_from_number!(u8, U8);
+try_from_number!(u16, U16);
+try_from_number!(u32, U32);
+try_from_number!(u64, U64);
+try_from_number!(u128, U128);
+
+try_from_number!(f32, F32);
+try_from_number!(f64, F64);
+
+impl TryFrom<Number> for isize {
     type Error = Error;
-
-    #[inline]
     fn try_from(n: Number) -> Result<Self, Self::Error> {
         match n {
-            Number::Float(_) => Err(Error::UnsupportedConversion),
-            Number::SignedInt(v) => Ok(v),
-            Number::UnsignedInt(v) => v.try_into().map_err(|_| Error::OutOfBounds),
+            Number::I64(v) => Ok(v.try_into().map_err(|_| Error::UnsupportedConversion)?),
+            Number::I32(v) => Ok(v.try_into().map_err(|_| Error::UnsupportedConversion)?),
+            _ => Err(Error::UnsupportedConversion),
         }
     }
 }
 
-try_int_from_number!(u8);
-try_int_from_number!(u16);
-try_int_from_number!(u32);
-try_int_from_number!(usize);
-
-impl TryFrom<Number> for u64 {
+impl TryFrom<Number> for usize {
     type Error = Error;
-
-    #[inline]
     fn try_from(n: Number) -> Result<Self, Self::Error> {
         match n {
-            Number::Float(_) => Err(Error::UnsupportedConversion),
-            Number::SignedInt(v) => v.try_into().map_err(|_| Error::OutOfBounds),
-            Number::UnsignedInt(v) => Ok(v),
+            Number::U64(v) => Ok(v.try_into().map_err(|_| Error::UnsupportedConversion)?),
+            Number::U32(v) => Ok(v.try_into().map_err(|_| Error::UnsupportedConversion)?),
+            _ => Err(Error::UnsupportedConversion),
         }
     }
 }
@@ -94,9 +90,18 @@ impl Serialize for Number {
         S: Serializer,
     {
         match *self {
-            Self::Float(v) => serializer.serialize_f64(v),
-            Self::SignedInt(v) => serializer.serialize_i64(v),
-            Self::UnsignedInt(v) => serializer.serialize_u64(v),
+            Number::I8(v) => serializer.serialize_i8(v),
+            Number::I16(v) => serializer.serialize_i16(v),
+            Number::I32(v) => serializer.serialize_i32(v),
+            Number::I64(v) => serializer.serialize_i64(v),
+            Number::I128(v) => serializer.serialize_i128(v),
+            Number::U8(v) => serializer.serialize_u8(v),
+            Number::U16(v) => serializer.serialize_u16(v),
+            Number::U32(v) => serializer.serialize_u32(v),
+            Number::U64(v) => serializer.serialize_u64(v),
+            Number::U128(v) => serializer.serialize_u128(v),
+            Number::F32(v) => serializer.serialize_f32(v),
+            Number::F64(v) => serializer.serialize_f64(v),
         }
     }
 }
@@ -118,18 +123,53 @@ impl<'de> Deserialize<'de> for Number {
             }
 
             #[inline]
+            fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E> {
+                Ok(Number::I8(value))
+            }
+
+            #[inline]
+            fn visit_i16<E>(self, value: i16) -> Result<Self::Value, E> {
+                Ok(Number::I16(value))
+            }
+
+            #[inline]
+            fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E> {
+                Ok(Number::I32(value))
+            }
+
+            #[inline]
             fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E> {
-                Ok(Number::SignedInt(value))
+                Ok(Number::I64(value))
+            }
+
+            #[inline]
+            fn visit_u8<E>(self, value: u8) -> Result<Self::Value, E> {
+                Ok(Number::U8(value))
+            }
+
+            #[inline]
+            fn visit_u16<E>(self, value: u16) -> Result<Self::Value, E> {
+                Ok(Number::U16(value))
+            }
+
+            #[inline]
+            fn visit_u32<E>(self, value: u32) -> Result<Self::Value, E> {
+                Ok(Number::U32(value))
             }
 
             #[inline]
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
-                Ok(Number::UnsignedInt(value))
+                Ok(Number::U64(value))
+            }
+
+            #[inline]
+            fn visit_f32<E>(self, value: f32) -> Result<Self::Value, E> {
+                Ok(Number::F32(value))
             }
 
             #[inline]
             fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E> {
-                Ok(Number::Float(value))
+                Ok(Number::F64(value))
             }
         }
 
@@ -297,63 +337,27 @@ impl From<Number> for Intermediate {
     }
 }
 
-impl From<i64> for Intermediate {
-    #[inline]
-    fn from(v: i64) -> Self {
-        Self::from(Number::SignedInt(v))
-    }
-}
-
-impl From<u64> for Intermediate {
-    #[inline]
-    fn from(v: u64) -> Self {
-        Self::from(Number::UnsignedInt(v))
-    }
-}
-
-impl From<f32> for Intermediate {
-    #[inline]
-    fn from(v: f32) -> Self {
-        Self::from(Number::Float(v as _))
-    }
-}
-
-impl From<f64> for Intermediate {
-    #[inline]
-    fn from(v: f64) -> Self {
-        Self::from(Number::Float(v))
-    }
-}
-
-macro_rules! intermediate_from_signed_int {
-    ( $ty:ty ) => {
-        impl From<$ty> for Intermediate {
+macro_rules! intermediate_from_number {
+    ( $x:ty, $y:expr ) => {
+        impl From<$x> for Intermediate {
             #[inline]
-            fn from(v: $ty) -> Self {
-                Self::from(Number::SignedInt(v.into()))
+            fn from(v: $x) -> Self {
+                Self::from($y(v.try_into().unwrap()))
             }
         }
     };
 }
 
-intermediate_from_signed_int!(i8);
-intermediate_from_signed_int!(i16);
-intermediate_from_signed_int!(i32);
-
-macro_rules! intermediate_from_unsigned_int {
-    ( $ty:ty ) => {
-        impl From<$ty> for Intermediate {
-            #[inline]
-            fn from(v: $ty) -> Self {
-                Self::from(Number::UnsignedInt(v.into()))
-            }
-        }
-    };
-}
-
-intermediate_from_unsigned_int!(u8);
-intermediate_from_unsigned_int!(u16);
-intermediate_from_unsigned_int!(u32);
+intermediate_from_number!(i8, Number::I8);
+intermediate_from_number!(i16, Number::I16);
+intermediate_from_number!(i32, Number::I32);
+intermediate_from_number!(i64, Number::I64);
+intermediate_from_number!(u8, Number::U8);
+intermediate_from_number!(u16, Number::U16);
+intermediate_from_number!(u32, Number::U32);
+intermediate_from_number!(u64, Number::U64);
+intermediate_from_number!(f32, Number::F32);
+intermediate_from_number!(f64, Number::F64);
 
 impl From<String> for Intermediate {
     #[inline]
@@ -506,18 +510,53 @@ impl<'de> Deserialize<'de> for Intermediate {
             }
 
             #[inline]
+            fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::I8(value)))
+            }
+
+            #[inline]
+            fn visit_i16<E>(self, value: i16) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::I16(value)))
+            }
+
+            #[inline]
+            fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::I32(value)))
+            }
+
+            #[inline]
             fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E> {
-                Ok(Intermediate::Number(Number::SignedInt(value)))
+                Ok(Intermediate::Number(Number::I64(value)))
+            }
+
+            #[inline]
+            fn visit_u8<E>(self, value: u8) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::U8(value)))
+            }
+
+            #[inline]
+            fn visit_u16<E>(self, value: u16) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::U16(value)))
+            }
+
+            #[inline]
+            fn visit_u32<E>(self, value: u32) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::U32(value)))
             }
 
             #[inline]
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
-                Ok(Intermediate::Number(Number::UnsignedInt(value)))
+                Ok(Intermediate::Number(Number::U64(value)))
+            }
+
+            #[inline]
+            fn visit_f32<E>(self, value: f32) -> Result<Self::Value, E> {
+                Ok(Intermediate::Number(Number::F32(value)))
             }
 
             #[inline]
             fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E> {
-                Ok(Intermediate::Number(Number::Float(value)))
+                Ok(Intermediate::Number(Number::F64(value)))
             }
 
             #[inline]
@@ -526,22 +565,20 @@ impl<'de> Deserialize<'de> for Intermediate {
             }
 
             #[inline]
-            fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-                Ok(Intermediate::String(Cow::Owned(value)))
-            }
-
-            #[inline]
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
                 Ok(Intermediate::String(Cow::Owned(String::from(value))))
             }
 
+            #[inline]
+            fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
+                Ok(Intermediate::String(Cow::Owned(value)))
+            }
+
             fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E> {
                 let mut res = Vec::with_capacity(value.len());
-
                 for b in value {
-                    res.push(Intermediate::Number(Number::UnsignedInt(*b as _)));
+                    res.push(Intermediate::Number(Number::U8(*b)));
                 }
-
                 Ok(Intermediate::Array(res))
             }
 

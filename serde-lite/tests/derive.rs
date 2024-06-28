@@ -1,7 +1,7 @@
 use std::convert::TryInto;
+use std::fmt::Debug;
 
 use serde_lite::{intermediate, Deserialize, Error, Intermediate, Map, Number, Serialize, Update};
-
 use serde_lite_derive::{Deserialize, Serialize, Update};
 
 #[test]
@@ -19,7 +19,7 @@ fn test_struct_deserialize() {
 
     #[derive(Deserialize)]
     struct InnerStruct {
-        number: u32,
+        number: i32,
         #[serde(rename = "hello")]
         greetings: String,
         #[serde(default)]
@@ -50,10 +50,10 @@ fn test_struct_update() {
 
     #[derive(Deserialize, Update)]
     struct InnerStruct {
-        number: u32,
+        number: i32,
         #[serde(rename = "hello")]
         greetings: String,
-        year: u32,
+        year: i32,
     }
 
     let mut instance = OuterStruct {
@@ -79,7 +79,7 @@ fn test_tuple_struct_deserialize() {
     let input2 = intermediate!([10]);
 
     #[derive(Deserialize)]
-    struct SingleElementTuple(u32);
+    struct SingleElementTuple(i32);
 
     let output1 = SingleElementTuple::deserialize(&input1).unwrap();
 
@@ -88,7 +88,7 @@ fn test_tuple_struct_deserialize() {
     assert!(SingleElementTuple::deserialize(&input2).is_err());
 
     #[derive(Deserialize)]
-    struct MultiElementStruct(u32, String);
+    struct MultiElementStruct(i32, String);
 
     let input = intermediate!([32, "hello"]);
 
@@ -106,7 +106,7 @@ fn test_tuple_struct_update() {
     let input2 = intermediate!([20]);
 
     #[derive(Deserialize, Update)]
-    struct SingleElementTuple(u32);
+    struct SingleElementTuple(i32);
 
     let mut instance = SingleElementTuple(0);
 
@@ -117,7 +117,7 @@ fn test_tuple_struct_update() {
     assert!(instance.update(&input2).is_err());
 
     #[derive(Deserialize, Update)]
-    struct MultiElementStruct(u32, String);
+    struct MultiElementStruct(i32, String);
 
     let input = intermediate!([32, "hello"]);
 
@@ -206,12 +206,12 @@ fn test_enum_deserialize() {
     enum TestEnum {
         Variant1,
         #[serde(rename = "variant2")]
-        Variant2(u32),
+        Variant2(i32),
         Variant3 {
-            field1: u32,
+            field1: i32,
             field2: String,
         },
-        Variant4(Vec<u32>),
+        Variant4(Vec<i32>),
     }
 
     let output1 = TestEnum::deserialize(&input1).unwrap();
@@ -292,12 +292,12 @@ fn test_enum_update() {
     enum TestEnum {
         Variant1,
         #[serde(rename = "variant2")]
-        Variant2(u32),
+        Variant2(i32),
         Variant3 {
-            field1: u32,
+            field1: i32,
             field2: String,
         },
-        Variant4(Vec<u32>),
+        Variant4(Vec<i32>),
     }
 
     let mut instance = TestEnum::Variant2(0);
@@ -378,7 +378,7 @@ fn test_internally_tagged_enum_deserialize_and_update() {
 
     #[derive(Deserialize, Update)]
     struct InnerStruct {
-        field1: u32,
+        field1: i32,
         field2: String,
     }
 
@@ -432,7 +432,7 @@ fn test_adjacently_tagged_enum_deserialize_and_update() {
 
     #[derive(Deserialize, Update)]
     struct InnerStruct {
-        field1: u32,
+        field1: i32,
         field2: String,
     }
 
@@ -478,7 +478,7 @@ fn test_adjacently_tagged_enum_deserialize_and_update() {
 fn test_struct_serialize() {
     #[derive(Serialize)]
     struct OuterTestStruct {
-        field1: u32,
+        field1: i32,
         field2: InnerTestStruct,
         #[serde(flatten)]
         field3: InnerTestStruct,
@@ -507,7 +507,7 @@ fn test_struct_serialize() {
     let map = data.as_map().unwrap();
 
     assert_eq!(map.len(), 4);
-    assert_eq!(get_unsigned_int_field(map, "field1"), 10);
+    assert_eq!(get_number_field::<i32>(map, "field1"), 10);
 
     let field2 = get_map_field(map, "field2");
     assert_eq!(field2.len(), 2);
@@ -541,15 +541,15 @@ fn test_externally_tagged_enum_serialize() {
     enum ExternallyTaggedEnum {
         Variant1,
         #[serde(rename = "v2")]
-        Variant2(u32),
-        Variant3(u32, String),
+        Variant2(i32),
+        Variant3(i32, String),
         Variant4 {
-            field1: u32,
+            field1: i32,
             #[serde(flatten)]
             field2: InnerTestStruct,
         },
         Variant5(InnerTestStruct),
-        Variant6(Vec<u32>),
+        Variant6(Vec<i32>),
     }
 
     let instance = OuterTestStruct {
@@ -579,13 +579,13 @@ fn test_externally_tagged_enum_serialize() {
 
     let field6 = get_map_field(map, "field6");
     assert_eq!(field6.len(), 1);
-    assert_eq!(get_unsigned_int_field(field6, "v2"), 20);
+    assert_eq!(get_number_field::<i32>(field6, "v2"), 20);
 
     let field7 = get_map_field(map, "field7");
     assert_eq!(field7.len(), 1);
     let arr = get_array_field(field7, "Variant3");
     assert_eq!(arr.len(), 2);
-    let n: u64 = arr[0].as_number().unwrap().try_into().unwrap();
+    let n: i32 = arr[0].as_number().unwrap().try_into().unwrap();
     assert_eq!(n, 30);
     assert_eq!(arr[1].as_str().unwrap(), "sss");
 
@@ -593,7 +593,7 @@ fn test_externally_tagged_enum_serialize() {
     assert_eq!(field8.len(), 1);
     let inner = get_map_field(field8, "Variant4");
     assert_eq!(inner.len(), 3);
-    assert_eq!(get_unsigned_int_field(inner, "field1"), 40);
+    assert_eq!(get_number_field::<i32>(inner, "field1"), 40);
     assert_eq!(get_bool_field(inner, "inner1"), true);
     assert_eq!(get_str_field(inner, "inner2"), "zzz");
 
@@ -613,7 +613,7 @@ fn test_externally_tagged_enum_serialize() {
     assert_eq!(field11.len(), 1);
     let arr = get_array_field(field11, "Variant6");
     assert_eq!(arr.len(), 1);
-    let n: u64 = arr[0].as_number().unwrap().try_into().unwrap();
+    let n: i32 = arr[0].as_number().unwrap().try_into().unwrap();
     assert_eq!(n, 50);
 }
 
@@ -645,10 +645,10 @@ fn test_internally_tagged_enum_serialize() {
     enum InternallyTaggedEnum {
         Variant1,
         #[serde(rename = "v2")]
-        Variant2(u32),
-        Variant3(u32, String),
+        Variant2(i32),
+        Variant3(i32, String),
         Variant4 {
-            field1: u32,
+            field1: i32,
             #[serde(flatten)]
             field2: InnerTestStruct,
         },
@@ -692,7 +692,7 @@ fn test_internally_tagged_enum_serialize() {
     let e1 = get_map_field(field4, "e1");
     assert_eq!(e1.len(), 4);
     assert_eq!(get_str_field(e1, "variant"), "Variant4");
-    assert_eq!(get_unsigned_int_field(e1, "field1"), 30);
+    assert_eq!(get_number_field::<i32>(e1, "field1"), 30);
     assert_eq!(get_bool_field(e1, "inner1"), true);
     assert_eq!(get_str_field(e1, "inner2"), "foo");
     assert_eq!(get_str_field(field4, "variant"), "Variant5");
@@ -706,7 +706,7 @@ fn test_internally_tagged_enum_serialize() {
     let field11 = get_map_field(map, "field11");
     assert_eq!(field11.len(), 4);
     assert_eq!(get_str_field(field11, "variant"), "Variant4");
-    assert_eq!(get_unsigned_int_field(field11, "field1"), 50);
+    assert_eq!(get_number_field::<i32>(field11, "field1"), 50);
     assert_eq!(get_bool_field(field11, "inner1"), true);
     assert_eq!(get_str_field(field11, "inner2"), "xyz");
 
@@ -735,7 +735,7 @@ fn test_adjacently_tagged_enum_serialize() {
     #[serde(tag = "variant", content = "content")]
     enum AdjacentlyTaggedEnum {
         Variant1,
-        Variant2(u32, String),
+        Variant2(i32, String),
     }
 
     let instance = OuterTestStruct {
@@ -757,40 +757,39 @@ fn test_adjacently_tagged_enum_serialize() {
     assert_eq!(get_str_field(field14, "variant"), "Variant2");
     let arr = get_array_field(field14, "content");
     assert_eq!(arr.len(), 2);
-    let n: u64 = arr[0].as_number().unwrap().try_into().unwrap();
+    let n: i32 = arr[0].as_number().unwrap().try_into().unwrap();
     assert_eq!(n, 60);
     assert_eq!(arr[1].as_str().unwrap(), "asdf");
 }
 
 #[test]
-#[allow(unused_variables)]
 fn test_skip_deserializing() {
     #[derive(Deserialize, Update)]
     struct TestStruct {
-        field1: u32,
+        field1: i32,
         #[serde(skip)]
-        field2: u32,
+        field2: i32,
         #[serde(skip_deserializing)]
-        field3: u32,
+        field3: i32,
     }
 
     let mut map = Map::new();
-    map.insert_with_static_key("field1", Intermediate::Number(Number::UnsignedInt(10)));
-    map.insert_with_static_key("field2", Intermediate::Number(Number::UnsignedInt(20)));
-    map.insert_with_static_key("field3", Intermediate::Number(Number::UnsignedInt(30)));
+    map.insert_with_static_key("field1", Intermediate::Number(Number::I32(10)));
+    map.insert_with_static_key("field2", Intermediate::Number(Number::I32(20)));
+    map.insert_with_static_key("field3", Intermediate::Number(Number::I32(30)));
     let input = Intermediate::Map(map);
 
     let mut instance = TestStruct::deserialize(&input).unwrap();
 
     assert_eq!(instance.field1, 10);
-    assert_eq!(instance.field2, u32::default());
-    assert_eq!(instance.field3, u32::default());
+    assert_eq!(instance.field2, i32::default());
+    assert_eq!(instance.field3, i32::default());
 
     instance.update(&input).unwrap();
 
     assert_eq!(instance.field1, 10);
-    assert_eq!(instance.field2, u32::default());
-    assert_eq!(instance.field3, u32::default());
+    assert_eq!(instance.field2, i32::default());
+    assert_eq!(instance.field3, i32::default());
 }
 
 #[test]
@@ -798,13 +797,13 @@ fn test_skip_deserializing() {
 fn test_skip_serializing() {
     #[derive(Serialize)]
     struct TestStruct {
-        field1: u32,
+        field1: i32,
         #[serde(skip)]
-        field2: u32,
+        field2: i32,
         #[serde(skip_serializing)]
-        field3: u32,
+        field3: i32,
         #[serde(skip_serializing_if = "Option::is_none")]
-        field4: Option<u32>,
+        field4: Option<i32>,
     }
 
     let mut instance = TestStruct {
@@ -817,20 +816,20 @@ fn test_skip_serializing() {
     let data = instance.serialize().unwrap();
     let map = data.as_map().unwrap();
     assert_eq!(map.len(), 2);
-    assert_eq!(get_unsigned_int_field(map, "field1"), 1);
-    assert_eq!(get_unsigned_int_field(map, "field4"), 4);
+    assert_eq!(get_number_field::<i32>(map, "field1"), 1);
+    assert_eq!(get_number_field::<i32>(map, "field4"), 4);
 
     instance.field4 = None;
 
     let data = instance.serialize().unwrap();
     let map = data.as_map().unwrap();
     assert_eq!(map.len(), 1);
-    assert_eq!(get_unsigned_int_field(map, "field1"), 1);
+    assert_eq!(get_number_field::<i32>(map, "field1"), 1);
 }
 
 #[test]
 fn test_serialize_with() {
-    struct CustomType(u32);
+    struct CustomType(i32);
 
     #[derive(Serialize)]
     struct TestStruct {
@@ -852,12 +851,12 @@ fn test_serialize_with() {
     let fields = data.as_map().unwrap();
 
     assert_eq!(fields.len(), 1);
-    assert_eq!(get_unsigned_int_field(fields, "field"), 10);
+    assert_eq!(get_number_field::<i32>(fields, "field"), 10);
 }
 
 #[test]
 fn test_deserialize_with() {
-    struct CustomType(u32);
+    struct CustomType(i32);
 
     #[derive(Deserialize)]
     struct TestStruct {
@@ -866,21 +865,17 @@ fn test_deserialize_with() {
     }
 
     fn deserialize_custom_type(val: &Intermediate) -> Result<CustomType, Error> {
-        Ok(CustomType(u32::deserialize(val)?))
+        Ok(CustomType(i32::deserialize(val)?))
     }
 
-    let input = intermediate!({
-        "field": 15
-    });
-
+    let input = intermediate!({"field": 15});
     let res = TestStruct::deserialize(&input).unwrap();
-
     assert_eq!(res.field.0, 15);
 }
 
 #[test]
 fn test_update_with() {
-    struct CustomType(u32);
+    struct CustomType(i32);
 
     #[derive(Deserialize, Update)]
     struct TestStruct {
@@ -892,11 +887,11 @@ fn test_update_with() {
     }
 
     fn deserialize_custom_type(val: &Intermediate) -> Result<CustomType, Error> {
-        Ok(CustomType(u32::deserialize(val)?))
+        Ok(CustomType(i32::deserialize(val)?))
     }
 
     fn update_custom_type(val: &mut CustomType, input: &Intermediate) -> Result<(), Error> {
-        u32::update(&mut val.0, input)?;
+        i32::update(&mut val.0, input)?;
 
         Ok(())
     }
@@ -930,7 +925,11 @@ fn get_bool_field(map: &Map, name: &str) -> bool {
 }
 
 /// Helper.
-fn get_unsigned_int_field(map: &Map, name: &str) -> u64 {
+fn get_number_field<T>(map: &Map, name: &str) -> T
+where
+    T: num_traits::PrimInt + TryFrom<Number>,
+    <T as TryFrom<Number>>::Error: Debug,
+{
     map.get(name)
         .unwrap()
         .as_number()

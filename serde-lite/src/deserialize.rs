@@ -8,7 +8,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Error, Intermediate};
+use crate::{Error, Intermediate, Number};
 
 /// Deserialize trait.
 ///
@@ -59,41 +59,35 @@ deserialize_for_signed_int!(i8);
 deserialize_for_signed_int!(i16);
 deserialize_for_signed_int!(i32);
 deserialize_for_signed_int!(i64);
-deserialize_for_signed_int!(isize);
+deserialize_for_signed_int!(i128);
 
 deserialize_for_unsigned_int!(u8);
 deserialize_for_unsigned_int!(u16);
 deserialize_for_unsigned_int!(u32);
 deserialize_for_unsigned_int!(u64);
-deserialize_for_unsigned_int!(usize);
-
-impl Deserialize for i128 {
-    #[inline]
-    fn deserialize(val: &Intermediate) -> Result<Self, Error> {
-        i64::deserialize(val).map(|v| v.into())
-    }
-}
-
-impl Deserialize for u128 {
-    #[inline]
-    fn deserialize(val: &Intermediate) -> Result<Self, Error> {
-        u64::deserialize(val).map(|v| v.into())
-    }
-}
+deserialize_for_unsigned_int!(u128);
 
 impl Deserialize for f32 {
     #[inline]
     fn deserialize(val: &Intermediate) -> Result<Self, Error> {
-        f64::deserialize(val).map(|v| v as _)
+        if let Intermediate::Number(n) = val {
+            if let Number::F32(v) = n {
+                return Ok(*v);
+            }
+        }
+        Err(Error::invalid_value_static("number"))
     }
 }
 
 impl Deserialize for f64 {
     #[inline]
     fn deserialize(val: &Intermediate) -> Result<Self, Error> {
-        val.as_number()
-            .map(|n| n.into())
-            .ok_or_else(|| Error::invalid_value_static("number"))
+        if let Intermediate::Number(n) = val {
+            if let Number::F64(v) = n {
+                return Ok(*v);
+            }
+        }
+        Err(Error::invalid_value_static("number"))
     }
 }
 

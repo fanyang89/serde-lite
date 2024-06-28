@@ -44,7 +44,7 @@ use serde_lite_derive::Serialize;
 
 #[derive(Serialize)]
 struct MyStruct {
-    field1: u32,
+    field1: i32,
     field2: String,
 }
 
@@ -66,7 +66,7 @@ use serde_lite_derive::Deserialize;
 
 #[derive(Deserialize)]
 struct MyStruct {
-    field1: u32,
+    field1: i32,
     field2: String,
 }
 

@@ -31,7 +31,7 @@
 //!
 //! #[derive(Serialize)]
 //! struct MyStruct {
-//!     field1: u32,
+//!     field1: i32,
 //!     field2: String,
 //! }
 //!
@@ -53,7 +53,7 @@
 //!
 //! #[derive(Deserialize)]
 //! struct MyStruct {
-//!     field1: u32,
+//!     field1: u64,
 //!     field2: String,
 //! }
 //!

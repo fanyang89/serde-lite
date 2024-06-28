@@ -39,14 +39,12 @@ update_by_replace!(i16);
 update_by_replace!(i32);
 update_by_replace!(i64);
 update_by_replace!(i128);
-update_by_replace!(isize);
 
 update_by_replace!(u8);
 update_by_replace!(u16);
 update_by_replace!(u32);
 update_by_replace!(u64);
 update_by_replace!(u128);
-update_by_replace!(usize);
 
 update_by_replace!(f32);
 update_by_replace!(f64);
